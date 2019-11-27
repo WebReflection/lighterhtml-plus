@@ -325,16 +325,6 @@ var lighterhtml = (function (document,exports) {
     }
   }
 
-  var WeakSet$1 = (typeof WeakSet === "undefined" ? "undefined" : typeof(WeakSet)) == typeof(add) ? WeakSet : function () {
-    var ws = new WeakMap$1();
-    ws.add = add;
-    return ws;
-  };
-
-  function add(key) {
-    return this.set(key, true);
-  }
-
   /*! (c) Andrea Giammarchi - ISC */
   var createContent = function (document) {
 
@@ -1314,13 +1304,35 @@ var lighterhtml = (function (document,exports) {
 
   var CONNECTED = 'connected';
   var DISCONNECTED = 'dis' + CONNECTED;
-  var OWNER_SVG_ELEMENT = 'ownerSVGElement';
+  var WS = (typeof WeakSet === "undefined" ? "undefined" : typeof(WeakSet)) == typeof(add) ? WeakSet : function () {
+    var ws = new WeakMap$1();
+    ws.add = add;
+    return ws;
+  };
   var poly = {
     Event: CustomEvent$1,
-    WeakSet: WeakSet$1
+    WeakSet: WS
   };
   var observe = disconnected(poly);
-  var attribute = attributechanged(poly); // returns nodes from wires and components
+  var attribute = attributechanged(poly);
+
+  var hyperEvent = function hyperEvent(node, name) {
+    var oldValue;
+    var type = name.slice(2);
+    if (type === CONNECTED || type === DISCONNECTED) observe(node);else if (type === 'attributechanged') attribute(node);else if (name.toLowerCase() in node) type = type.toLowerCase();
+    return function (newValue) {
+      if (oldValue !== newValue) {
+        if (oldValue) node.removeEventListener(type, oldValue, false);
+        oldValue = newValue;
+        if (newValue) node.addEventListener(type, newValue, false);
+      }
+    };
+  };
+
+  function add(key) {
+    return this.set(key, true);
+  } // end patch for lighterhtml-plus
+  var OWNER_SVG_ELEMENT = 'ownerSVGElement'; // returns nodes from wires and components
 
   var asNode = function asNode(item, i) {
     return item.nodeType === wireType ? 1 / i < 0 ? i ? item.remove(true) : item.lastChild : i ? item.valueOf(true) : item.firstChild : item;
@@ -1360,21 +1372,6 @@ var lighterhtml = (function (document,exports) {
       }
     };
   }; // events attributes helpers
-
-
-  var hyperEvent = function hyperEvent(node, name) {
-    var oldValue;
-    var type = name.slice(2);
-    if (type === CONNECTED || type === DISCONNECTED) observe(node);else if (type === 'attributechanged') attribute(node);else if (name.toLowerCase() in node) type = type.toLowerCase();
-    if (name.toLowerCase() in node) type = type.toLowerCase();
-    return function (newValue) {
-      if (oldValue !== newValue) {
-        if (oldValue) node.removeEventListener(type, oldValue, false);
-        oldValue = newValue;
-        if (newValue) node.addEventListener(type, newValue, false);
-      }
-    };
-  }; // special attributes helpers
 
 
   var hyperProperty = function hyperProperty(node, name) {

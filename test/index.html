@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>lighterhtml-plus</title>
+  <script src="../index.js"></script>
+  <script>
+  this.onload = function () {
+    var render = lighterhtml.render;
+    var html = lighterhtml.html;
+    function onconnected(event) {
+      event.currentTarget.textContent = 'it works 🎉';
+    }
+    render(
+      document.body,
+      html(['<div onconnected=', ' />'], onconnected)
+    );
+  };
+  </script>
+</head>
+</html>

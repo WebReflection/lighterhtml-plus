@@ -1,9 +1,54 @@
 'use strict';
+// start patch for lighterhtml-plus
 const CustomEvent = (m => m.__esModule ? /* istanbul ignore next */ m.default : /* istanbul ignore next */ m)(require('@ungap/custom-event'));
+const WeakMap = (m => m.__esModule ? /* istanbul ignore next */ m.default : /* istanbul ignore next */ m)(require('@ungap/weakmap'));
 const attributechanged = (m => m.__esModule ? /* istanbul ignore next */ m.default : /* istanbul ignore next */ m)(require('attributechanged'));
 const disconnected = (m => m.__esModule ? /* istanbul ignore next */ m.default : /* istanbul ignore next */ m)(require('disconnected'));
-const WeakSet = (m => m.__esModule ? /* istanbul ignore next */ m.default : /* istanbul ignore next */ m)(require('./weakset.js'));
 
+const CONNECTED = 'connected';
+const DISCONNECTED = 'dis' + CONNECTED;
+
+const WS = (typeof WeakSet == typeof add ?
+  WeakSet :
+  function () {
+    const ws = new WeakMap;
+    ws.add = add;
+    return ws;
+  }
+);
+
+const poly = {
+  Event: CustomEvent,
+  WeakSet: WS
+};
+
+const observe = disconnected(poly);
+const attribute = attributechanged(poly);
+
+const hyperEvent = (node, name) => {
+  let oldValue;
+  let type = name.slice(2);
+  if (type === CONNECTED || type === DISCONNECTED)
+    observe(node);
+  else if (type === 'attributechanged')
+    attribute(node);
+  else if (name.toLowerCase() in node)
+    type = type.toLowerCase();
+  return newValue => {
+    if (oldValue !== newValue) {
+      if (oldValue)
+        node.removeEventListener(type, oldValue, false);
+      oldValue = newValue;
+      if (newValue)
+        node.addEventListener(type, newValue, false);
+    }
+  };
+};
+
+function add(key) {
+  return this.set(key, true);
+}
+// end patch for lighterhtml-plus
 const createContent = (m => m.__esModule ? /* istanbul ignore next */ m.default : /* istanbul ignore next */ m)(require('@ungap/create-content'));
 const domdiff = (m => m.__esModule ? /* istanbul ignore next */ m.default : /* istanbul ignore next */ m)(require('domdiff'));
 const domtagger = (m => m.__esModule ? /* istanbul ignore next */ m.default : /* istanbul ignore next */ m)(require('domtagger'));
@@ -11,17 +56,7 @@ const hyperStyle = (m => m.__esModule ? /* istanbul ignore next */ m.default : /
 
 const {wireType, isArray} = require('./shared.js');
 
-const CONNECTED = 'connected';
-const DISCONNECTED = 'dis' + CONNECTED;
 const OWNER_SVG_ELEMENT = 'ownerSVGElement';
-
-const poly = {
-  Event: CustomEvent,
-  WeakSet
-};
-
-const observe = disconnected(poly);
-const attribute = attributechanged(poly);
 
 // returns nodes from wires and components
 const asNode = (item, i) => item.nodeType === wireType ?
@@ -64,15 +99,9 @@ const hyperAttribute = (node, original) => {
 };
 
 // events attributes helpers
-const hyperEvent = (node, name) => {
+const _hyperEvent = (node, name) => {
   let oldValue;
   let type = name.slice(2);
-  if (type === CONNECTED || type === DISCONNECTED)
-    observe(node);
-  else if (type === 'attributechanged')
-    attribute(node);
-  else if (name.toLowerCase() in node)
-    type = type.toLowerCase();
   if (name.toLowerCase() in node)
     type = type.toLowerCase();
   return newValue => {
