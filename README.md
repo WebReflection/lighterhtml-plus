@@ -1,5 +1,7 @@
 # lighterhtml-plus
 
+[![Build Status](https://travis-ci.com/WebReflection/lighterhtml-plus.svg?branch=master)](https://travis-ci.com/WebReflection/lighterhtml-plus) ![WebReflection status](https://offline.report/status/webreflection.svg) [![License: ISC](https://img.shields.io/badge/License-ISC-yellow.svg)](https://opensource.org/licenses/ISC)
+
 This is exactly [lighterhtml](https://github.com/WebReflection/lighterhtml#readme), plus:
 
   * `onconnected` callback, as in [hyperHTML](https://github.com/WebReflection/hyperHTML#hyperhtml), to have Custom Elements like callbacks
