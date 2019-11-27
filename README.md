@@ -8,6 +8,7 @@ This is exactly [lighterhtml](https://github.com/WebReflection/lighterhtml#readm
   * `ondisconnected` callback, as in [hyperHTML](https://github.com/WebReflection/hyperHTML#hyperhtml), to have counter events when nodes get disconnected
   * `onattributechanged` callback, as in [wickedElements](https://github.com/WebReflection/wicked-elements#wickedelements), to have attributes change notifications, Custom Elements like
 
+[Live test](https://webreflection.github.io/lighterhtml-plus/test/)
 
 ```js
 import {render, html} from 'lighterhtml-plus';
