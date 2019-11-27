@@ -15,7 +15,8 @@
     "size": "cat index.js | wc -c;cat min.js | wc -c;gzip -c9 min.js | wc -c;cat es.js | wc -c;gzip -c9 es.js | wc -c",
     "copy": "npm run copy:all && npm run copy:patch",
     "copy:all": "cp node_modules/lighterhtml/esm/*.js esm/",
-    "copy:patch": "cp plus.js esm/tagger.js && cat node_modules/lighterhtml/esm/tagger.js | sed 's/const hyperEvent =/const _hyperEvent =/' >> esm/tagger.js"
+    "copy:patch": "cp plus.js esm/tagger.js && cat node_modules/lighterhtml/esm/tagger.js | sed 's/const hyperEvent =/const _hyperEvent =/' >> esm/tagger.js",
+    "test": "echo 'please check lighterhtml'"
   },
   "keywords": [
     "html",

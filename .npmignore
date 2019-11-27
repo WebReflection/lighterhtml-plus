@@ -9,3 +9,4 @@ _config.yml
 package-lock.json
 rollup.config.js
 es.config.js
+plus.js
