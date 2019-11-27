@@ -1,9 +1,10 @@
-import WeakMap from '@ungap/weakmap';
-import tta from '@ungap/template-tag-arguments';
-import domsanitizer from 'domsanitizer';
+'use strict';
+const WeakMap = (m => m.__esModule ? /* istanbul ignore next */ m.default : /* istanbul ignore next */ m)(require('@ungap/weakmap'));
+const tta = (m => m.__esModule ? /* istanbul ignore next */ m.default : /* istanbul ignore next */ m)(require('@ungap/template-tag-arguments'));
+const domsanitizer = (m => m.__esModule ? /* istanbul ignore next */ m.default : /* istanbul ignore next */ m)(require('domsanitizer'));
 
-import {Tagger} from './tagger.js';
-import {Wire, create, freeze, isArray, keys} from './shared.js';
+const {Tagger} = require('./tagger.js');
+const {Wire, create, freeze, isArray, keys} = require('./shared.js');
 
 const tProto = Tagger.prototype;
 
@@ -129,12 +130,13 @@ const wiredContent = node => {
 };
 
 freeze(Hole);
-export function Hole(type, args) {
+function Hole(type, args) {
   this.type = type;
   this.args = args;
-};
+}
+exports.Hole = Hole;
 
-export const custom = overrides => {
+const custom = overrides => {
   const prototype = create(tProto);
   keys(overrides).forEach(key => {
     prototype[key] = overrides[key](
@@ -148,6 +150,9 @@ export const custom = overrides => {
     return Tagger.apply(this, arguments);
   }
 };
+exports.custom = custom;
 
 const {render, html, svg} = createRender(Tagger);
-export {render, html, svg};
+exports.render = render;
+exports.html = html;
+exports.svg = svg;

@@ -30,6 +30,7 @@
     "ascjs": "^3.1.2",
     "babel-plugin-remove-ungap": "^1.2.0",
     "drop-babel-typeof": "^1.0.3",
+    "lighterhtml": "^2.0.4",
     "rollup": "^1.27.5",
     "rollup-plugin-babel": "^4.3.3",
     "rollup-plugin-node-resolve": "^5.2.0",

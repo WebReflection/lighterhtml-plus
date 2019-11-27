@@ -1,14 +1,15 @@
-import CustomEvent from '@ungap/custom-event';
-import attributechanged from 'attributechanged';
-import disconnected from 'disconnected';
-import WeakSet from './weakset.js';
+'use strict';
+const CustomEvent = (m => m.__esModule ? /* istanbul ignore next */ m.default : /* istanbul ignore next */ m)(require('@ungap/custom-event'));
+const attributechanged = (m => m.__esModule ? /* istanbul ignore next */ m.default : /* istanbul ignore next */ m)(require('attributechanged'));
+const disconnected = (m => m.__esModule ? /* istanbul ignore next */ m.default : /* istanbul ignore next */ m)(require('disconnected'));
+const WeakSet = (m => m.__esModule ? /* istanbul ignore next */ m.default : /* istanbul ignore next */ m)(require('./weakset.js'));
 
-import createContent from '@ungap/create-content';
-import domdiff from 'domdiff';
-import domtagger from 'domtagger';
-import hyperStyle from 'hyperhtml-style';
+const createContent = (m => m.__esModule ? /* istanbul ignore next */ m.default : /* istanbul ignore next */ m)(require('@ungap/create-content'));
+const domdiff = (m => m.__esModule ? /* istanbul ignore next */ m.default : /* istanbul ignore next */ m)(require('domdiff'));
+const domtagger = (m => m.__esModule ? /* istanbul ignore next */ m.default : /* istanbul ignore next */ m)(require('domtagger'));
+const hyperStyle = (m => m.__esModule ? /* istanbul ignore next */ m.default : /* istanbul ignore next */ m)(require('hyperhtml-style'));
 
-import {wireType, isArray} from './shared.js';
+const {wireType, isArray} = require('./shared.js');
 
 const CONNECTED = 'connected';
 const DISCONNECTED = 'dis' + CONNECTED;
@@ -132,10 +133,11 @@ const slice = [].slice;
 // simplifies text node creation
 const text = (node, text) => node.ownerDocument.createTextNode(text);
 
-export function Tagger(type) {
+function Tagger(type) {
   this.type = type;
   return domtagger(this);
-};
+}
+exports.Tagger = Tagger;
 
 Tagger.prototype = {
 
