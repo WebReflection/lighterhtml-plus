@@ -1,0 +1,11 @@
+coverage/
+img/
+node_modules/
+test/
+_config.yml
+.DS_Store
+.gitignore
+.travis.yml
+package-lock.json
+rollup.config.js
+es.config.js

@@ -1,0 +1,61 @@
+{
+  "name": "lighterhtml-plus",
+  "version": "2.0.0",
+  "description": "lighterhtml plus `onconnected`, `ondisconnected`, and `onattributechanged` events",
+  "main": "cjs/index.js",
+  "module": "esm/index.js",
+  "unpkg": "min.js",
+  "scripts": {
+    "build": "npm run rollup && npm run es && npm run clean && npm run cjs && npm run min && npm run size",
+    "cjs": "ascjs esm cjs",
+    "clean": "sed -i.bck -e 's/var isNoOp =.*/var isNoOp = false;/' index.js && sed -i.bck 's/(exports)/(document,exports)/;s/({}));/(document,{}));/' index.js && rm index.js.bck",
+    "es": "rollup --config es.config.js && sed -i.bck 's/var /\\/*! (c) Andrea Giammarchi - ISC *\\/var /' es.js && rm es.js.bck",
+    "min": "echo '/*! (c) Andrea Giammarchi - ISC */' > min.js && uglifyjs index.js -c -m >> min.js",
+    "rollup": "rollup --config rollup.config.js && drop-babel-typeof index.js",
+    "size": "cat index.js | wc -c;cat min.js | wc -c;gzip -c9 min.js | wc -c;cat es.js | wc -c;gzip -c9 es.js | wc -c"
+  },
+  "keywords": [
+    "html",
+    "svg",
+    "render",
+    "hyper",
+    "lit",
+    "alternative"
+  ],
+  "author": "Andrea Giammarchi",
+  "license": "ISC",
+  "devDependencies": {
+    "@babel/core": "^7.7.4",
+    "@babel/preset-env": "^7.7.4",
+    "ascjs": "^3.1.2",
+    "babel-plugin-remove-ungap": "^1.2.0",
+    "drop-babel-typeof": "^1.0.3",
+    "rollup": "^1.27.5",
+    "rollup-plugin-babel": "^4.3.3",
+    "rollup-plugin-node-resolve": "^5.2.0",
+    "rollup-plugin-replace": "^2.2.0",
+    "rollup-plugin-terser": "^5.1.2",
+    "uglify-es": "^3.3.9"
+  },
+  "dependencies": {
+    "@ungap/create-content": "^0.1.4",
+    "@ungap/custom-event": "^0.2.0",
+    "@ungap/template-tag-arguments": "^0.3.1",
+    "@ungap/weakmap": "^0.1.4",
+    "attributechanged": "^0.2.0",
+    "disconnected": "^0.2.1",
+    "domdiff": "^2.1.1",
+    "domsanitizer": "^0.2.2",
+    "domtagger": "^0.5.11",
+    "hyperhtml-style": "^0.1.2",
+    "hyperhtml-wire": "^2.1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WebReflection/lighterhtml.git"
+  },
+  "bugs": {
+    "url": "https://github.com/WebReflection/lighterhtml/issues"
+  },
+  "homepage": "https://github.com/WebReflection/lighterhtml#readme"
+}
