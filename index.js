@@ -380,55 +380,6 @@ var lighterhtml = (function (document,exports) {
     }
   }(document);
 
-  /*! (c) Andrea Giammarchi - ISC */
-  var self$2 = null ||
-  /* istanbul ignore next */
-  {};
-
-  try {
-    self$2.Map = Map;
-  } catch (Map) {
-    self$2.Map = function Map() {
-      var i = 0;
-      var k = [];
-      var v = [];
-      return {
-        "delete": function _delete(key) {
-          var had = contains(key);
-
-          if (had) {
-            k.splice(i, 1);
-            v.splice(i, 1);
-          }
-
-          return had;
-        },
-        forEach: function forEach(callback, context) {
-          k.forEach(function (key, i) {
-            callback.call(context, v[i], key, this);
-          }, this);
-        },
-        get: function get(key) {
-          return contains(key) ? v[i] : void 0;
-        },
-        has: function has(key) {
-          return contains(key);
-        },
-        set: function set(key, value) {
-          v[contains(key) ? i : k.push(key) - 1] = value;
-          return this;
-        }
-      };
-
-      function contains(v) {
-        i = k.indexOf(v);
-        return -1 < i;
-      }
-    };
-  }
-
-  var Map$1 = self$2.Map;
-
   var iOF = [].indexOf;
   var append = function append(get, parent, children, start, end, before) {
     var isSelect = 'selectedIndex' in parent;
@@ -510,23 +461,20 @@ var lighterhtml = (function (document,exports) {
       tresh[i] = currentEnd;
     }
 
-    var keymap = new Map$1();
+    var nodes = currentNodes.slice(currentStart, currentEnd);
 
-    for (var _i = currentStart; _i < currentEnd; _i++) {
-      keymap.set(currentNodes[_i], _i);
-    }
+    for (var _i = futureStart; _i < futureEnd; _i++) {
+      var index = nodes.indexOf(futureNodes[_i]);
 
-    for (var _i2 = futureStart; _i2 < futureEnd; _i2++) {
-      var idxInOld = keymap.get(futureNodes[_i2]);
-
-      if (idxInOld != null) {
+      if (-1 < index) {
+        var idxInOld = index + currentStart;
         k = findK(tresh, minLen, idxInOld);
         /* istanbul ignore else */
 
         if (-1 < k) {
           tresh[k] = idxInOld;
           link[k] = {
-            newi: _i2,
+            newi: _i,
             oldi: idxInOld,
             prev: link[k - 1]
           };
@@ -651,7 +599,7 @@ var lighterhtml = (function (document,exports) {
   };
 
   var applyDiff = function applyDiff(diff, get, parentNode, futureNodes, futureStart, currentNodes, currentStart, currentLength, before) {
-    var live = new Map$1();
+    var live = [];
     var length = diff.length;
     var currentIndex = currentStart;
     var i = 0;
@@ -665,7 +613,7 @@ var lighterhtml = (function (document,exports) {
 
         case INSERTION:
           // TODO: bulk appends for sequential nodes
-          live.set(futureNodes[futureStart], 1);
+          live.push(futureNodes[futureStart]);
           append(get, parentNode, futureNodes, futureStart++, futureStart, currentIndex < currentLength ? get(currentNodes[currentIndex], 0) : before);
           break;
 
@@ -685,7 +633,7 @@ var lighterhtml = (function (document,exports) {
 
         case DELETION:
           // TODO: bulk removes for sequential nodes
-          if (live.has(currentNodes[currentStart])) currentStart++;else remove(get, currentNodes, currentStart++, currentStart);
+          if (-1 < live.indexOf(currentNodes[currentStart])) currentStart++;else remove(get, currentNodes, currentStart++, currentStart);
           break;
       }
     }
@@ -924,8 +872,8 @@ var lighterhtml = (function (document,exports) {
   }
 
   function parseAttributes(node, holes, parts, path) {
-    var cache = new Map$1();
     var attributes = node.attributes;
+    var cache = [];
     var remove = [];
     var array = normalizeAttributes(attributes, parts);
     var length = array.length;
@@ -942,14 +890,14 @@ var lighterhtml = (function (document,exports) {
 
         /* istanbul ignore else */
 
-        if (!cache.has(name)) {
+        if (cache.indexOf(name) < 0) {
+          cache.push(name);
           var realName = parts.shift().replace(direct ? /^(?:|[\S\s]*?\s)(\S+?)\s*=\s*('|")?$/ : new RegExp('^(?:|[\\S\\s]*?\\s)(' + name + ')\\s*=\\s*(\'|")[\\S\\s]*', 'i'), '$1');
           var value = attributes[realName] || // the following ignore is covered by browsers
           // while basicHTML is already case-sensitive
 
           /* istanbul ignore next */
           attributes[realName.toLowerCase()];
-          cache.set(name, value);
           if (direct) holes.push(Attr(value, path, realName, null));else {
             var skip = sparse.length - 2;
 
@@ -1037,7 +985,6 @@ var lighterhtml = (function (document,exports) {
 
   // globals
   var parsed = new WeakMap$1();
-  var referenced = new WeakMap$1();
 
   function createInfo(options, template) {
     var markup = (options.convert || domsanitizer)(template);
@@ -1132,22 +1079,17 @@ var lighterhtml = (function (document,exports) {
 
   function createDetails(options, template) {
     var info = parsed.get(template) || createInfo(options, template);
-    var content = importNode.call(document, info.content, true);
-    var details = {
-      content: content,
-      template: template,
-      updates: info.updates(content)
-    };
-    referenced.set(options, details);
-    return details;
+    return info.updates(importNode.call(document, info.content, true));
   }
 
+  var empty = [];
+
   function domtagger(options) {
+    var previous = empty;
+    var updates = cleanContent;
     return function (template) {
-      var details = referenced.get(options);
-      if (details == null || details.template !== template) details = createDetails(options, template);
-      details.updates.apply(null, arguments);
-      return details.content;
+      if (previous !== template) updates = createDetails(options, previous = template);
+      return updates.apply(null, arguments);
     };
   }
 
@@ -1332,7 +1274,6 @@ var lighterhtml = (function (document,exports) {
   function add(key) {
     return this.set(key, true);
   } // end patch for lighterhtml-plus
-  var OWNER_SVG_ELEMENT = 'ownerSVGElement'; // returns nodes from wires and components
 
   var asNode = function asNode(item, i) {
     return item.nodeType === wireType ? 1 / i < 0 ? i ? item.remove(true) : item.lastChild : i ? item.valueOf(true) : item.firstChild : item;
@@ -1432,9 +1373,11 @@ var lighterhtml = (function (document,exports) {
     //    so that you can style=${{width: 120}}. In this case, the behavior has been
     //    fully inspired by Preact library and its simplicity.
     attribute: function attribute(node, name, original) {
+      var isSVG = this.type === 'svg';
+
       switch (name) {
         case 'class':
-          if (OWNER_SVG_ELEMENT in node) return hyperAttribute(node, original);
+          if (isSVG) return hyperAttribute(node, original);
           name = 'className';
 
         case 'data':
@@ -1442,15 +1385,15 @@ var lighterhtml = (function (document,exports) {
           return hyperProperty(node, name);
 
         case 'style':
-          return hyperStyle(node, original, OWNER_SVG_ELEMENT in node);
+          return hyperStyle(node, original, isSVG);
 
         case 'ref':
           return hyperRef(node);
 
         default:
-          if (name.slice(0, 1) === '.') return hyperSetter(node, name.slice(1), OWNER_SVG_ELEMENT in node);
+          if (name.slice(0, 1) === '.') return hyperSetter(node, name.slice(1), isSVG);
           if (name.slice(0, 2) === 'on') return hyperEvent(node, name);
-          if (name in node && !(OWNER_SVG_ELEMENT in node || readOnly.test(name))) return hyperProperty(node, name);
+          if (name in node && !(isSVG || readOnly.test(name))) return hyperProperty(node, name);
           return hyperAttribute(node, original);
       }
     },
@@ -1467,9 +1410,7 @@ var lighterhtml = (function (document,exports) {
         node: asNode,
         before: node
       };
-      var nodeType = OWNER_SVG_ELEMENT in node ?
-      /* istanbul ignore next */
-      'svg' : 'html';
+      var type = this.type;
       var fastPath = false;
       var oldValue;
 
@@ -1541,7 +1482,7 @@ var lighterhtml = (function (document,exports) {
             } else if ('any' in value) {
               anyContent(value.any);
             } else if ('html' in value) {
-              childNodes = domdiff(node.parentNode, childNodes, slice.call(createContent([].concat(value.html).join(''), nodeType).childNodes), diffOptions);
+              childNodes = domdiff(node.parentNode, childNodes, slice.call(createContent([].concat(value.html).join(''), type).childNodes), diffOptions);
             } else if ('length' in value) {
               anyContent(slice.call(value));
             }
@@ -1667,8 +1608,8 @@ var lighterhtml = (function (document,exports) {
         i = counter.i,
         aLength = counter.aLength,
         iLength = counter.iLength;
-    if (a + 1 < aLength) sub.splice(a + 1);
-    if (i + 1 < iLength) stack.splice(i + 1);
+    if (a < aLength) sub.splice(a);
+    if (i < iLength) stack.splice(i);
     return wire;
   };
 
@@ -1690,6 +1631,7 @@ var lighterhtml = (function (document,exports) {
       tag: null,
       wire: null
     });
+    counter.i++;
     unrollArray(Tagger, info, args, counter);
     var entry = stack[i];
     if (i < iLength && entry.id === args[0] && entry.type === type) entry.tag.apply(null, args);else {
@@ -1706,10 +1648,7 @@ var lighterhtml = (function (document,exports) {
       var hole = args[i];
 
       if (typeof(hole) === 'object' && hole) {
-        if (hole instanceof Hole) {
-          counter.i++;
-          args[i] = unroll(Tagger, info, hole, counter);
-        } else if (isArray(hole)) {
+        if (hole instanceof Hole) args[i] = unroll(Tagger, info, hole, counter);else if (isArray(hole)) {
           for (var _i = 0, _length = hole.length; _i < _length; _i++) {
             var inner = hole[_i];
 
@@ -1743,10 +1682,10 @@ var lighterhtml = (function (document,exports) {
     keys(overrides).forEach(function (key) {
       prototype[key] = overrides[key](prototype[key] || (key === 'convert' ? domsanitizer : String));
     });
-    CustomTqgger.prototype = prototype;
-    return createRender(CustomTqgger);
+    CustomTagger.prototype = prototype;
+    return createRender(CustomTagger);
 
-    function CustomTqgger() {
+    function CustomTagger() {
       return Tagger.apply(this, arguments);
     }
   };
