@@ -3,6 +3,26 @@ var lighterhtml = (function (document,exports) {
 
   
 
+  function _toConsumableArray(arr) {
+    return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _nonIterableSpread();
+  }
+
+  function _arrayWithoutHoles(arr) {
+    if (Array.isArray(arr)) {
+      for (var i = 0, arr2 = new Array(arr.length); i < arr.length; i++) arr2[i] = arr[i];
+
+      return arr2;
+    }
+  }
+
+  function _iterableToArray(iter) {
+    if (Symbol.iterator in Object(iter) || Object.prototype.toString.call(iter) === "[object Arguments]") return Array.from(iter);
+  }
+
+  function _nonIterableSpread() {
+    throw new TypeError("Invalid attempt to spread non-iterable instance");
+  }
+
   /*! (c) Andrea Giammarchi - ISC */
   var self = null ||
   /* istanbul ignore next */
@@ -167,6 +187,71 @@ var lighterhtml = (function (document,exports) {
   function fullClosing($0, $1, $2) {
     return VOID_ELEMENTS.test($1) ? $0 : '<' + $1 + $2 + '></' + $1 + '>';
   }
+
+  var isArray = Array.isArray;
+  var _ref = [],
+      indexOf = _ref.indexOf,
+      slice = _ref.slice;
+
+  var umap = (function (_) {
+    return {
+      // About: get: _.get.bind(_)
+      // It looks like WebKit/Safari didn't optimize bind at all,
+      // so that using bind slows it down by 60%.
+      // Firefox and Chrome are just fine in both cases,
+      // so let's use the approach that works fast everywhere 👍
+      get: function get(key) {
+        return _.get(key);
+      },
+      set: function set(key, value) {
+        return _.set(key, value), value;
+      }
+    };
+  });
+
+  var ELEMENT_NODE$1 = 1;
+  var nodeType = 111;
+
+  var remove = function remove(_ref) {
+    var firstChild = _ref.firstChild,
+        lastChild = _ref.lastChild;
+    var range = document.createRange();
+    range.setStartAfter(firstChild);
+    range.setEndAfter(lastChild);
+    range.deleteContents();
+    return firstChild;
+  };
+
+  var diffable = function diffable(node, operation) {
+    return node.nodeType === nodeType ? 1 / operation < 0 ? operation ? remove(node) : node.lastChild : operation ? node.valueOf() : node.firstChild : node;
+  };
+  var persistent = function persistent(fragment) {
+    var childNodes = fragment.childNodes;
+    var length = childNodes.length; // If the fragment has no content
+    // it should return undefined and break
+
+    if (length < 2) return childNodes[0];
+    var nodes = slice.call(childNodes, 0);
+    var firstChild = nodes[0];
+    var lastChild = nodes[length - 1];
+    return {
+      ELEMENT_NODE: ELEMENT_NODE$1,
+      nodeType: nodeType,
+      firstChild: firstChild,
+      lastChild: lastChild,
+      valueOf: function valueOf() {
+        if (childNodes.length !== length) {
+          var i = 0;
+
+          while (i < length) {
+            fragment.appendChild(nodes[i++]);
+          }
+        }
+
+        return fragment;
+      }
+    };
+  };
 
   /*! (c) Andrea Giammarchi - ISC */
   var self$1 = null ||
@@ -380,7 +465,6 @@ var lighterhtml = (function (document,exports) {
     }
   }(document);
 
-  var iOF = [].indexOf;
   var append = function append(get, parent, children, start, end, before) {
     var isSelect = 'selectedIndex' in parent;
     var noSelection = isSelect;
@@ -392,7 +476,7 @@ var lighterhtml = (function (document,exports) {
       if (isSelect && noSelection && child.selected) {
         noSelection = !noSelection;
         var selectedIndex = parent.selectedIndex;
-        parent.selectedIndex = selectedIndex < 0 ? start : iOF.call(parent.querySelectorAll('option'), child);
+        parent.selectedIndex = selectedIndex < 0 ? start : indexOf.call(parent.querySelectorAll('option'), child);
       }
 
       start++;
@@ -404,7 +488,7 @@ var lighterhtml = (function (document,exports) {
   var identity = function identity(O) {
     return O;
   };
-  var indexOf = function indexOf(moreNodes, moreStart, moreEnd, lessNodes, lessStart, lessEnd, compare) {
+  var indexOf$1 = function indexOf(moreNodes, moreStart, moreEnd, lessNodes, lessStart, lessEnd, compare) {
     var length = lessEnd - lessStart;
     /* istanbul ignore if */
 
@@ -435,7 +519,7 @@ var lighterhtml = (function (document,exports) {
   var next = function next(get, list, i, length, before) {
     return i < length ? get(list[i], 0) : 0 < i ? get(list[i - 1], -0).nextSibling : before;
   };
-  var remove = function remove(get, children, start, end) {
+  var remove$1 = function remove(get, children, start, end) {
     while (start < end) {
       drop(get(children[start++], -1));
     }
@@ -633,7 +717,7 @@ var lighterhtml = (function (document,exports) {
 
         case DELETION:
           // TODO: bulk removes for sequential nodes
-          if (-1 < live.indexOf(currentNodes[currentStart])) currentStart++;else remove(get, currentNodes, currentStart++, currentStart);
+          if (-1 < live.indexOf(currentNodes[currentStart])) currentStart++;else remove$1(get, currentNodes, currentStart++, currentStart);
           break;
       }
     }
@@ -709,7 +793,7 @@ var lighterhtml = (function (document,exports) {
 
 
     if (futureSame && currentStart < currentEnd) {
-      remove(get, currentNodes, currentStart, currentEnd);
+      remove$1(get, currentNodes, currentStart, currentEnd);
       return futureNodes;
     }
 
@@ -718,7 +802,7 @@ var lighterhtml = (function (document,exports) {
     var i = -1; // 2 simple indels: the shortest sequence is a subsequence of the longest
 
     if (currentChanges < futureChanges) {
-      i = indexOf(futureNodes, futureStart, futureEnd, currentNodes, currentStart, currentEnd, compare); // inner diff
+      i = indexOf$1(futureNodes, futureStart, futureEnd, currentNodes, currentStart, currentEnd, compare); // inner diff
 
       if (-1 < i) {
         append(get, parentNode, futureNodes, futureStart, i, get(currentNodes[currentStart], 0));
@@ -728,11 +812,11 @@ var lighterhtml = (function (document,exports) {
     }
     /* istanbul ignore else */
     else if (futureChanges < currentChanges) {
-        i = indexOf(currentNodes, currentStart, currentEnd, futureNodes, futureStart, futureEnd, compare); // outer diff
+        i = indexOf$1(currentNodes, currentStart, currentEnd, futureNodes, futureStart, futureEnd, compare); // outer diff
 
         if (-1 < i) {
-          remove(get, currentNodes, currentStart, i);
-          remove(get, currentNodes, i + futureChanges, currentEnd);
+          remove$1(get, currentNodes, currentStart, i);
+          remove$1(get, currentNodes, i + futureChanges, currentEnd);
           return futureNodes;
         }
       } // common case with one replacement for many nodes
@@ -743,7 +827,7 @@ var lighterhtml = (function (document,exports) {
 
     if (currentChanges < 2 || futureChanges < 2) {
       append(get, parentNode, futureNodes, futureStart, futureEnd, get(currentNodes[currentStart], 0));
-      remove(get, currentNodes, currentStart, currentEnd);
+      remove$1(get, currentNodes, currentStart, currentEnd);
       return futureNodes;
     } // the half match diff part has been skipped in petit-dom
     // https://github.com/yelouafi/petit-dom/blob/bd6f5c919b5ae5297be01612c524c40be45f14a7/src/vdom.js#L391-L397
@@ -984,7 +1068,7 @@ var lighterhtml = (function (document,exports) {
   }
 
   // globals
-  var parsed = new WeakMap$1();
+  var parsed = umap(new WeakMap$1());
 
   function createInfo(options, template) {
     var markup = (options.convert || domsanitizer)(template);
@@ -994,7 +1078,7 @@ var lighterhtml = (function (document,exports) {
     cleanContent(content);
     var holes = [];
     parse(content, holes, template.slice(0), []);
-    var info = {
+    return {
       content: content,
       updates: function updates(content) {
         var updates = [];
@@ -1073,12 +1157,10 @@ var lighterhtml = (function (document,exports) {
         };
       }
     };
-    parsed.set(template, info);
-    return info;
   }
 
   function createDetails(options, template) {
-    var info = parsed.get(template) || createInfo(options, template);
+    var info = parsed.get(template) || parsed.set(template, createInfo(options, template));
     return info.updates(importNode.call(document, info.content, true));
   }
 
@@ -1189,61 +1271,6 @@ var lighterhtml = (function (document,exports) {
     }
   }();
 
-  /*! (c) Andrea Giammarchi - ISC */
-  var Wire = function (slice, proto) {
-    proto = Wire.prototype;
-    proto.ELEMENT_NODE = 1;
-    proto.nodeType = 111;
-
-    proto.remove = function (keepFirst) {
-      var childNodes = this.childNodes;
-      var first = this.firstChild;
-      var last = this.lastChild;
-      this._ = null;
-
-      if (keepFirst && childNodes.length === 2) {
-        last.parentNode.removeChild(last);
-      } else {
-        var range = this.ownerDocument.createRange();
-        range.setStartBefore(keepFirst ? childNodes[1] : first);
-        range.setEndAfter(last);
-        range.deleteContents();
-      }
-
-      return first;
-    };
-
-    proto.valueOf = function (forceAppend) {
-      var fragment = this._;
-      var noFragment = fragment == null;
-      if (noFragment) fragment = this._ = this.ownerDocument.createDocumentFragment();
-
-      if (noFragment || forceAppend) {
-        for (var n = this.childNodes, i = 0, l = n.length; i < l; i++) {
-          fragment.appendChild(n[i]);
-        }
-      }
-
-      return fragment;
-    };
-
-    return Wire;
-
-    function Wire(childNodes) {
-      var nodes = this.childNodes = slice.call(childNodes, 0);
-      this.firstChild = nodes[0];
-      this.lastChild = nodes[nodes.length - 1];
-      this.ownerDocument = nodes[0].ownerDocument;
-      this._ = null;
-    }
-  }([].slice);
-
-  var isArray = Array.isArray;
-  var create = Object.create,
-      freeze = Object.freeze,
-      keys = Object.keys;
-  var wireType = Wire.prototype.nodeType;
-
   var CONNECTED = 'connected';
   var DISCONNECTED = 'dis' + CONNECTED;
   var WS = (typeof WeakSet === "undefined" ? "undefined" : typeof(WeakSet)) == typeof(add) ? WeakSet : function () {
@@ -1274,16 +1301,6 @@ var lighterhtml = (function (document,exports) {
   function add(key) {
     return this.set(key, true);
   } // end patch for lighterhtml-plus
-
-  var asNode = function asNode(item, i) {
-    return item.nodeType === wireType ? 1 / i < 0 ? i ? item.remove(true) : item.lastChild : i ? item.valueOf(true) : item.firstChild : item;
-  }; // returns true if domdiff can handle the value
-
-
-  var canDiff = function canDiff(value) {
-    return 'ELEMENT_NODE' in value;
-  }; // generic attributes helpers
-
 
   var hyperAttribute = function hyperAttribute(node, original) {
     var oldValue;
@@ -1352,9 +1369,7 @@ var lighterhtml = (function (document,exports) {
   }; // list of attributes that should not be directly assigned
 
 
-  var readOnly = /^(?:form|list)$/i; // reused every slice time
-
-  var slice = [].slice; // simplifies text node creation
+  var readOnly = /^(?:form|list)$/i; // simplifies text node creation
 
   var text = function text(node, _text) {
     return node.ownerDocument.createTextNode(_text);
@@ -1407,7 +1422,7 @@ var lighterhtml = (function (document,exports) {
     //    update the node with the resulting list of content
     any: function any(node, childNodes) {
       var diffOptions = {
-        node: asNode,
+        node: diffable,
         before: node
       };
       var type = this.type;
@@ -1475,7 +1490,7 @@ var lighterhtml = (function (document,exports) {
                     break;
                 }
               }
-            } else if (canDiff(value)) {
+            } else if ('ELEMENT_NODE' in value) {
               childNodes = domdiff(node.parentNode, childNodes, value.nodeType === 11 ? slice.call(value.childNodes) : [value], diffOptions);
             } else if ('text' in value) {
               anyContent(String(value.text));
@@ -1532,8 +1547,11 @@ var lighterhtml = (function (document,exports) {
     return callback(this);
   }
 
+  var create = Object.create,
+      freeze = Object.freeze,
+      keys = Object.keys;
   var tProto = Tagger.prototype;
-  var cache = new WeakMap$1();
+  var cache = umap(new WeakMap$1());
 
   var createRender = function createRender(Tagger) {
     return {
@@ -1541,13 +1559,13 @@ var lighterhtml = (function (document,exports) {
       svg: outer('svg', Tagger),
       render: function render(where, what) {
         var hole = typeof what === 'function' ? what() : what;
-        var info = cache.get(where) || setCache(where);
-        var wire = hole instanceof LighterHole ? retrieve(Tagger, info, hole) : hole;
+        var info = cache.get(where) || cache.set(where, createCache());
+        var wire = hole instanceof LighterHole ? unroll(Tagger, info, hole) : hole;
 
         if (wire !== info.wire) {
           info.wire = wire;
           where.textContent = '';
-          where.appendChild(wire.valueOf(true));
+          where.appendChild(wire.valueOf());
         }
 
         return where;
@@ -1555,36 +1573,30 @@ var lighterhtml = (function (document,exports) {
     };
   };
 
-  var newInfo = function newInfo() {
+  var createCache = function createCache() {
     return {
-      sub: [],
       stack: [],
+      entry: null,
       wire: null
     };
   };
 
   var outer = function outer(type, Tagger) {
-    var cache = new WeakMap$1();
+    var cache = umap(new WeakMap$1());
 
     var fixed = function fixed(info) {
       return function () {
-        return retrieve(Tagger, info, hole.apply(null, arguments));
+        return unroll(Tagger, info, hole.apply(null, arguments));
       };
     };
 
-    var set = function set(ref) {
-      var memo = create(null);
-      cache.set(ref, memo);
-      return memo;
-    };
-
     hole["for"] = function (ref, id) {
-      var memo = cache.get(ref) || set(ref);
-      return memo[id] || (memo[id] = fixed(newInfo()));
+      var memo = cache.get(ref) || cache.set(ref, create(null));
+      return memo[id] || (memo[id] = fixed(createCache()));
     };
 
     hole.node = function () {
-      return retrieve(Tagger, newInfo(), hole.apply(null, arguments)).valueOf(true);
+      return unroll(Tagger, createCache(), hole.apply(null, arguments)).valueOf();
     };
 
     return hole;
@@ -1594,92 +1606,46 @@ var lighterhtml = (function (document,exports) {
     }
   };
 
-  var retrieve = function retrieve(Tagger, info, hole) {
-    var sub = info.sub,
-        stack = info.stack;
-    var counter = {
-      a: 0,
-      aLength: sub.length,
-      i: 0,
-      iLength: stack.length
-    };
-    var wire = unroll(Tagger, info, hole, counter);
-    var a = counter.a,
-        i = counter.i,
-        aLength = counter.aLength,
-        iLength = counter.iLength;
-    if (a < aLength) sub.splice(a);
-    if (i < iLength) stack.splice(i);
-    return wire;
-  };
+  var unroll = function unroll(Tagger, info, _ref) {
+    var _entry;
 
-  var setCache = function setCache(where) {
-    var info = newInfo();
-    cache.set(where, info);
-    return info;
-  };
+    var type = _ref.type,
+        template = _ref.template,
+        values = _ref.values;
+    var length = values.length;
+    unrollValues(Tagger, info, values, length);
+    var entry = info.entry;
 
-  var unroll = function unroll(Tagger, info, hole, counter) {
-    var stack = info.stack;
-    var i = counter.i,
-        iLength = counter.iLength;
-    var type = hole.type,
-        args = hole.args;
-    var unknown = i === iLength;
-    if (unknown) counter.iLength = stack.push({
-      type: type,
-      id: args[0],
-      tag: null,
-      wire: null
-    });
-    counter.i++;
-    unrollArray(Tagger, info, args, counter);
-    var entry = stack[i];
-
-    if (unknown || entry.id !== args[0] || entry.type !== type) {
-      entry.type = type;
-      entry.id = args[0];
-      entry.tag = new Tagger(type);
-      entry.wire = wiredContent(entry.tag.apply(null, args));
-    } else entry.tag.apply(null, args);
+    if (!entry || entry.template !== template || entry.type !== type) {
+      var tag = new Tagger(type);
+      info.entry = entry = {
+        type: type,
+        template: template,
+        tag: tag,
+        wire: persistent(tag.apply(void 0, [template].concat(_toConsumableArray(values))))
+      };
+    } else (_entry = entry).tag.apply(_entry, [template].concat(_toConsumableArray(values)));
 
     return entry.wire;
   };
 
-  var unrollArray = function unrollArray(Tagger, info, args, counter) {
-    for (var i = 1, length = args.length; i < length; i++) {
-      var hole = args[i];
+  var unrollValues = function unrollValues(Tagger, _ref2, values, length) {
+    var stack = _ref2.stack;
 
-      if (typeof(hole) === 'object' && hole) {
-        if (hole instanceof LighterHole) args[i] = unroll(Tagger, info, hole, counter);else if (isArray(hole)) {
-          for (var _i = 0, _length = hole.length; _i < _length; _i++) {
-            var inner = hole[_i];
-
-            if (typeof(inner) === 'object' && inner && inner instanceof LighterHole) {
-              var sub = info.sub;
-              var a = counter.a,
-                  aLength = counter.aLength;
-              if (a === aLength) counter.aLength = sub.push(newInfo());
-              counter.a++;
-              hole[_i] = retrieve(Tagger, sub[a], inner);
-            }
-          }
-        }
-      }
+    for (var i = 0; i < length; i++) {
+      var hole = values[i];
+      if (hole instanceof Hole) values[i] = unroll(Tagger, stack[i] || (stack[i] = createCache()), hole);else if (isArray(hole)) unrollValues(Tagger, stack[i] || (stack[i] = createCache()), hole, hole.length);else stack[i] = null;
     }
-  };
 
-  var wiredContent = function wiredContent(node) {
-    var childNodes = node.childNodes;
-    var length = childNodes.length;
-    return length === 1 ? childNodes[0] : length ? new Wire(childNodes) : node;
+    if (length < stack.length) stack.splice(length);
   };
 
   freeze(LighterHole);
 
   function LighterHole(type, args) {
     this.type = type;
-    this.args = args;
+    this.template = args.shift();
+    this.values = args;
   }
   var Hole = LighterHole;
   var custom = function custom(overrides) {
