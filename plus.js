@@ -7,39 +7,38 @@ import disconnected from 'disconnected';
 const CONNECTED = 'connected';
 const DISCONNECTED = 'dis' + CONNECTED;
 
-const WS = (typeof WeakSet == typeof add ?
-  WeakSet :
-  function () {
-    const ws = new WeakMap;
-    ws.add = add;
-    return ws;
-  }
-);
-
 const poly = {
   Event: CustomEvent,
-  WeakSet: WS
+  WeakSet: (typeof WeakSet == typeof add ?
+    WeakSet :
+    function () {
+      const ws = new WeakMap;
+      ws.add = add;
+      return ws;
+    }
+  )
 };
 
 const observe = disconnected(poly);
-const attribute = attributechanged(poly);
+const attrChanged = attributechanged(poly);
 
-const hyperEvent = (node, name) => {
+// substitute of uhandlers event
+const event = (node, name) => {
   let oldValue;
   let type = name.slice(2);
   if (type === CONNECTED || type === DISCONNECTED)
     observe(node);
   else if (type === 'attributechanged')
-    attribute(node);
-  else if (name.toLowerCase() in node)
+    attrChanged(node);
+  else if (!(name in node) && name.toLowerCase() in node)
     type = type.toLowerCase();
   return newValue => {
-    if (oldValue !== newValue) {
+    const info = isArray(newValue) ? newValue : [newValue, false];
+    if (oldValue !== info[0]) {
       if (oldValue)
-        node.removeEventListener(type, oldValue, false);
-      oldValue = newValue;
-      if (newValue)
-        node.addEventListener(type, newValue, false);
+        node.removeEventListener(type, oldValue, info[1]);
+      if (oldValue = info[0])
+        node.addEventListener(type, oldValue, info[1]);
     }
   };
 };

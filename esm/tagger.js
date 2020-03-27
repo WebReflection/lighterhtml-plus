@@ -7,39 +7,38 @@ import disconnected from 'disconnected';
 const CONNECTED = 'connected';
 const DISCONNECTED = 'dis' + CONNECTED;
 
-const WS = (typeof WeakSet == typeof add ?
-  WeakSet :
-  function () {
-    const ws = new WeakMap;
-    ws.add = add;
-    return ws;
-  }
-);
-
 const poly = {
   Event: CustomEvent,
-  WeakSet: WS
+  WeakSet: (typeof WeakSet == typeof add ?
+    WeakSet :
+    function () {
+      const ws = new WeakMap;
+      ws.add = add;
+      return ws;
+    }
+  )
 };
 
 const observe = disconnected(poly);
-const attribute = attributechanged(poly);
+const attrChanged = attributechanged(poly);
 
-const hyperEvent = (node, name) => {
+// substitute of uhandlers event
+const event = (node, name) => {
   let oldValue;
   let type = name.slice(2);
   if (type === CONNECTED || type === DISCONNECTED)
     observe(node);
   else if (type === 'attributechanged')
-    attribute(node);
-  else if (name.toLowerCase() in node)
+    attrChanged(node);
+  else if (!(name in node) && name.toLowerCase() in node)
     type = type.toLowerCase();
   return newValue => {
-    if (oldValue !== newValue) {
+    const info = isArray(newValue) ? newValue : [newValue, false];
+    if (oldValue !== info[0]) {
       if (oldValue)
-        node.removeEventListener(type, oldValue, false);
-      oldValue = newValue;
-      if (newValue)
-        node.addEventListener(type, newValue, false);
+        node.removeEventListener(type, oldValue, info[1]);
+      if (oldValue = info[0])
+        node.addEventListener(type, oldValue, info[1]);
     }
   };
 };
@@ -52,53 +51,10 @@ import createContent from '@ungap/create-content';
 import domdiff from 'domdiff';
 import domtagger from 'domtagger';
 import hyperStyle from 'hyperhtml-style';
+import {aria, attribute, data, ref, setter} from 'uhandlers';
 import {diffable} from 'uwire';
 
 import {isArray, slice} from 'uarray';
-
-// generic attributes helpers
-const hyperAttribute = (node, original) => {
-  let oldValue;
-  let owner = false;
-  const attribute = original.cloneNode(true);
-  return newValue => {
-    if (oldValue !== newValue) {
-      oldValue = newValue;
-      if (attribute.value !== newValue) {
-        if (newValue == null) {
-          if (owner) {
-            owner = false;
-            node.removeAttributeNode(attribute);
-          }
-          attribute.value = newValue;
-        } else {
-          attribute.value = newValue;
-          if (!owner) {
-            owner = true;
-            node.setAttributeNode(attribute);
-          }
-        }
-      }
-    }
-  };
-};
-
-// events attributes helpers
-const _hyperEvent = (node, name) => {
-  let oldValue;
-  let type = name.slice(2);
-  if (name.toLowerCase() in node)
-    type = type.toLowerCase();
-  return newValue => {
-    const info = isArray(newValue) ? newValue : [newValue, false];
-    if (oldValue !== info[0]) {
-      if (oldValue)
-        node.removeEventListener(type, oldValue, info[1]);
-      if (oldValue = info[0])
-        node.addEventListener(type, oldValue, info[1]);
-    }
-  };
-};
 
 // special attributes helpers
 const hyperProperty = (node, name) => {
@@ -117,26 +73,6 @@ const hyperProperty = (node, name) => {
     }
   };
 };
-
-// special hooks helpers
-const hyperRef = node => {
-  return ref => {
-    ref.current = node;
-  };
-};
-
-const hyperSetter = (node, name, svg) => svg ?
-  value => {
-    try {
-      node[name] = value;
-    }
-    catch (nope) {
-      node.setAttribute(name, value);
-    }
-  } :
-  value => {
-    node[name] = value;
-  };
 
 // list of attributes that should not be directly assigned
 const readOnly = /^(?:form|list)$/i;
@@ -163,23 +99,26 @@ Tagger.prototype = {
     switch (name) {
       case 'class':
         if (isSVG)
-          return hyperAttribute(node, original);
+          return attribute(node, name);
         name = 'className';
-      case 'data':
       case 'props':
-        return hyperProperty(node, name);
+        return setter(node, name);
+      case 'aria':
+        return aria(node);
+      case 'data':
+        return data(node);
       case 'style':
         return hyperStyle(node, original, isSVG);
       case 'ref':
-        return hyperRef(node);
+        return ref(node);
       default:
         if (name.slice(0, 1) === '.')
-          return hyperSetter(node, name.slice(1), isSVG);
+          return setter(node, name.slice(1));
         if (name.slice(0, 2) === 'on')
-          return hyperEvent(node, name);
+          return event(node, name);
         if (name in node && !(isSVG || readOnly.test(name)))
           return hyperProperty(node, name);
-        return hyperAttribute(node, original);
+        return attribute(node, name);
 
     }
   },

@@ -15,7 +15,7 @@
     "size": "cat index.js | wc -c;cat min.js | wc -c;gzip -c9 min.js | wc -c;cat es.js | wc -c;gzip -c9 es.js | wc -c",
     "copy": "npm run copy:all && npm run copy:patch",
     "copy:all": "cp node_modules/lighterhtml/esm/*.js esm/",
-    "copy:patch": "cp plus.js esm/tagger.js && cat node_modules/lighterhtml/esm/tagger.js | sed 's/const hyperEvent =/const _hyperEvent =/' >> esm/tagger.js",
+    "copy:patch": "cp plus.js esm/tagger.js && cat node_modules/lighterhtml/esm/tagger.js | sed 's/event, //' >> esm/tagger.js",
     "test": "echo 'please check lighterhtml'"
   },
   "keywords": [
@@ -29,13 +29,13 @@
   "author": "Andrea Giammarchi",
   "license": "ISC",
   "devDependencies": {
-    "@babel/core": "^7.8.7",
-    "@babel/preset-env": "^7.8.7",
+    "@babel/core": "^7.9.0",
+    "@babel/preset-env": "^7.9.0",
     "ascjs": "^3.1.2",
     "babel-plugin-remove-ungap": "^1.2.0",
     "drop-babel-typeof": "^1.0.3",
-    "lighterhtml": "^2.4.0",
-    "rollup": "^2.0.6",
+    "lighterhtml": "^3.0.0",
+    "rollup": "^2.2.0",
     "rollup-plugin-babel": "^4.4.0",
     "rollup-plugin-node-resolve": "^5.2.0",
     "rollup-plugin-replace": "^2.2.0",

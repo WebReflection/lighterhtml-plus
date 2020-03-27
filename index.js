@@ -4,23 +4,36 @@ var lighterhtml = (function (document,exports) {
   
 
   function _toConsumableArray(arr) {
-    return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _nonIterableSpread();
+    return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread();
   }
 
   function _arrayWithoutHoles(arr) {
-    if (Array.isArray(arr)) {
-      for (var i = 0, arr2 = new Array(arr.length); i < arr.length; i++) arr2[i] = arr[i];
-
-      return arr2;
-    }
+    if (Array.isArray(arr)) return _arrayLikeToArray(arr);
   }
 
   function _iterableToArray(iter) {
-    if (Symbol.iterator in Object(iter) || Object.prototype.toString.call(iter) === "[object Arguments]") return Array.from(iter);
+    if (typeof Symbol !== "undefined" && Symbol.iterator in Object(iter)) return Array.from(iter);
+  }
+
+  function _unsupportedIterableToArray(o, minLen) {
+    if (!o) return;
+    if (typeof o === "string") return _arrayLikeToArray(o, minLen);
+    var n = Object.prototype.toString.call(o).slice(8, -1);
+    if (n === "Object" && o.constructor) n = o.constructor.name;
+    if (n === "Map" || n === "Set") return Array.from(n);
+    if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen);
+  }
+
+  function _arrayLikeToArray(arr, len) {
+    if (len == null || len > arr.length) len = arr.length;
+
+    for (var i = 0, arr2 = new Array(len); i < len; i++) arr2[i] = arr[i];
+
+    return arr2;
   }
 
   function _nonIterableSpread() {
-    throw new TypeError("Invalid attempt to spread non-iterable instance");
+    throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
   }
 
   /*! (c) Andrea Giammarchi - ISC */
@@ -415,7 +428,7 @@ var lighterhtml = (function (document,exports) {
 
     var FRAGMENT = 'fragment';
     var TEMPLATE = 'template';
-    var HAS_CONTENT = 'content' in create(TEMPLATE);
+    var HAS_CONTENT = ('content' in create(TEMPLATE));
     var createHTML = HAS_CONTENT ? function (html) {
       var template = create(TEMPLATE);
       template.innerHTML = html;
@@ -466,7 +479,7 @@ var lighterhtml = (function (document,exports) {
   }(document);
 
   var append = function append(get, parent, children, start, end, before) {
-    var isSelect = 'selectedIndex' in parent;
+    var isSelect = ('selectedIndex' in parent);
     var noSelection = isSelect;
 
     while (start < end) {
@@ -850,7 +863,7 @@ var lighterhtml = (function (document,exports) {
 
   /*! (c) Andrea Giammarchi - ISC */
   var importNode = function (document, appendChild, cloneNode, createTextNode, importNode) {
-    var _native = importNode in document; // IE 11 has problems with cloning templates:
+    var _native = (importNode in document); // IE 11 has problems with cloning templates:
     // it "forgets" empty childNodes. This feature-detects that.
 
 
@@ -1271,29 +1284,79 @@ var lighterhtml = (function (document,exports) {
     }
   }();
 
-  var CONNECTED = 'connected';
-  var DISCONNECTED = 'dis' + CONNECTED;
-  var WS = (typeof WeakSet === "undefined" ? "undefined" : typeof(WeakSet)) == typeof(add) ? WeakSet : function () {
-    var ws = new WeakMap$1();
-    ws.add = add;
-    return ws;
+  var aria = function aria(node) {
+    return function (value) {
+      for (var key in value) {
+        node.setAttribute(key === 'role' ? key : "aria-".concat(key), value[key]);
+      }
+    };
   };
-  var poly = {
-    Event: CustomEvent$1,
-    WeakSet: WS
-  };
-  var observe = disconnected(poly);
-  var attribute = attributechanged(poly);
-
-  var hyperEvent = function hyperEvent(node, name) {
-    var oldValue;
-    var type = name.slice(2);
-    if (type === CONNECTED || type === DISCONNECTED) observe(node);else if (type === 'attributechanged') attribute(node);else if (name.toLowerCase() in node) type = type.toLowerCase();
+  var attribute = function attribute(node, name) {
+    var oldValue,
+        orphan = true;
+    var attributeNode = document.createAttribute(name);
     return function (newValue) {
       if (oldValue !== newValue) {
-        if (oldValue) node.removeEventListener(type, oldValue, false);
         oldValue = newValue;
-        if (newValue) node.addEventListener(type, newValue, false);
+
+        if (oldValue == null) {
+          if (!orphan) {
+            node.removeAttributeNode(attributeNode);
+            orphan = true;
+          }
+        } else {
+          attributeNode.value = newValue;
+
+          if (orphan) {
+            node.setAttributeNode(attributeNode);
+            orphan = false;
+          }
+        }
+      }
+    };
+  };
+  var data = function data(_ref) {
+    var dataset = _ref.dataset;
+    return function (value) {
+      for (var key in value) {
+        dataset[key] = value[key];
+      }
+    };
+  };
+  var ref = function ref(node) {
+    return function (value) {
+      if (typeof value === 'function') value(node);else value.current = node;
+    };
+  };
+  var setter = function setter(node, key) {
+    return function (value) {
+      node[key] = value;
+    };
+  };
+
+  var CONNECTED = 'connected';
+  var DISCONNECTED = 'dis' + CONNECTED;
+  var poly = {
+    Event: CustomEvent$1,
+    WeakSet: (typeof WeakSet === "undefined" ? "undefined" : typeof(WeakSet)) == typeof(add) ? WeakSet : function () {
+      var ws = new WeakMap$1();
+      ws.add = add;
+      return ws;
+    }
+  };
+  var observe = disconnected(poly);
+  var attrChanged = attributechanged(poly); // substitute of uhandlers event
+
+  var event = function event(node, name) {
+    var oldValue;
+    var type = name.slice(2);
+    if (type === CONNECTED || type === DISCONNECTED) observe(node);else if (type === 'attributechanged') attrChanged(node);else if (!(name in node) && name.toLowerCase() in node) type = type.toLowerCase();
+    return function (newValue) {
+      var info = isArray(newValue) ? newValue : [newValue, false];
+
+      if (oldValue !== info[0]) {
+        if (oldValue) node.removeEventListener(type, oldValue, info[1]);
+        if (oldValue = info[0]) node.addEventListener(type, oldValue, info[1]);
       }
     };
   };
@@ -1301,36 +1364,6 @@ var lighterhtml = (function (document,exports) {
   function add(key) {
     return this.set(key, true);
   } // end patch for lighterhtml-plus
-
-  var hyperAttribute = function hyperAttribute(node, original) {
-    var oldValue;
-    var owner = false;
-    var attribute = original.cloneNode(true);
-    return function (newValue) {
-      if (oldValue !== newValue) {
-        oldValue = newValue;
-
-        if (attribute.value !== newValue) {
-          if (newValue == null) {
-            if (owner) {
-              owner = false;
-              node.removeAttributeNode(attribute);
-            }
-
-            attribute.value = newValue;
-          } else {
-            attribute.value = newValue;
-
-            if (!owner) {
-              owner = true;
-              node.setAttributeNode(attribute);
-            }
-          }
-        }
-      }
-    };
-  }; // events attributes helpers
-
 
   var hyperProperty = function hyperProperty(node, name) {
     var oldValue;
@@ -1346,25 +1379,6 @@ var lighterhtml = (function (document,exports) {
           } else node[name] = newValue;
         }
       }
-    };
-  }; // special hooks helpers
-
-
-  var hyperRef = function hyperRef(node) {
-    return function (ref) {
-      ref.current = node;
-    };
-  };
-
-  var hyperSetter = function hyperSetter(node, name, svg) {
-    return svg ? function (value) {
-      try {
-        node[name] = value;
-      } catch (nope) {
-        node.setAttribute(name, value);
-      }
-    } : function (value) {
-      node[name] = value;
     };
   }; // list of attributes that should not be directly assigned
 
@@ -1387,29 +1401,34 @@ var lighterhtml = (function (document,exports) {
     //  * style, the only regular attribute that also accepts an object as value
     //    so that you can style=${{width: 120}}. In this case, the behavior has been
     //    fully inspired by Preact library and its simplicity.
-    attribute: function attribute(node, name, original) {
+    attribute: function attribute$1(node, name, original) {
       var isSVG = this.type === 'svg';
 
       switch (name) {
         case 'class':
-          if (isSVG) return hyperAttribute(node, original);
+          if (isSVG) return attribute(node, name);
           name = 'className';
 
-        case 'data':
         case 'props':
-          return hyperProperty(node, name);
+          return setter(node, name);
+
+        case 'aria':
+          return aria(node);
+
+        case 'data':
+          return data(node);
 
         case 'style':
           return hyperStyle(node, original, isSVG);
 
         case 'ref':
-          return hyperRef(node);
+          return ref(node);
 
         default:
-          if (name.slice(0, 1) === '.') return hyperSetter(node, name.slice(1), isSVG);
-          if (name.slice(0, 2) === 'on') return hyperEvent(node, name);
+          if (name.slice(0, 1) === '.') return setter(node, name.slice(1));
+          if (name.slice(0, 2) === 'on') return event(node, name);
           if (name in node && !(isSVG || readOnly.test(name))) return hyperProperty(node, name);
-          return hyperAttribute(node, original);
+          return attribute(node, name);
       }
     },
     // in a hyper(node)`<div>${content}</div>` case
