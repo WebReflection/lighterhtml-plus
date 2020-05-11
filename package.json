@@ -1,6 +1,6 @@
 {
   "name": "lighterhtml-plus",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "description": "lighterhtml plus `onconnected`, `ondisconnected`, and `onattributechanged` events",
   "main": "cjs/index.js",
   "module": "esm/index.js",
