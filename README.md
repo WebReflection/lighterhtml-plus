@@ -10,6 +10,8 @@ This is exactly [lighterhtml](https://github.com/WebReflection/lighterhtml#readm
 
 [Live test](https://webreflection.github.io/lighterhtml-plus/test/)
 
+**[V4 Breaking Changes](https://github.com/WebReflection/lighterhtml#v4-breaking-changes)**
+
 ```js
 import {render, html} from 'lighterhtml-plus';
 
